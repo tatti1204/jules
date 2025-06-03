@@ -43,20 +43,22 @@ class TestJournalGenerator(unittest.TestCase):
     def test_generate_entry_matched_with_rule(self):
         matched_results = [{
             "statement": {"id": "s1", "date": date(2023, 1, 10), "description": "STAPLES STORE 001", "amount": Decimal("-50.00")},
-            "voucher": {"id": "v1", "vendor_name": "Staples", "raw_text": "Staples office supplies receipt", "total_amount": Decimal("50.00")},
+            "voucher": {"id": "v1", "vendor_name": "Staples", "raw_text": "Staples office supplies receipt", "total_amount": Decimal("50.00")}, # raw_text has "staples"
             "status": "matched"
         }]
         entries = generate_journal_entries(matched_results, self.accounts_config, self.rules_config, self.default_bank, self.default_suspense)
         self.assertEqual(len(entries), 1)
         entry = entries[0]
-        self.assertEqual(entry["status"], "auto_generated_rule")
-        self.assertEqual(entry["description"], "Staples - STAPLES STORE 001")
-        self.assertEqual(entry["postings"][0]["account"], "Office Expenses") # Debit
+        self.assertEqual(entry["status"], "auto_generated_high_confidence")
+        self.assertEqual(entry["confidence_score"], Decimal("0.9"))
+        self.assertEqual(entry["description"], "STAPLES STORE 001") # Vendor name is part of description
+        self.assertEqual(entry["postings"][0]["account"], "Office Expenses")
         self.assertEqual(entry["postings"][0]["debit"], Decimal("50.00"))
-        self.assertEqual(entry["postings"][1]["account"], self.default_bank) # Credit
+        self.assertEqual(entry["postings"][1]["account"], self.default_bank)
         self.assertEqual(entry["postings"][1]["credit"], Decimal("50.00"))
         self.assertEqual(entry["source_statement_id"], "s1")
         self.assertEqual(entry["source_voucher_id"], "v1")
+        self.assertEqual(entry["notes"], "")
 
 
     def test_generate_entry_matched_no_rule(self):
@@ -68,11 +70,13 @@ class TestJournalGenerator(unittest.TestCase):
         entries = generate_journal_entries(matched_results, self.accounts_config, self.rules_config, self.default_bank, self.default_suspense)
         self.assertEqual(len(entries), 1)
         entry = entries[0]
-        self.assertEqual(entry["status"], "auto_generated_matched_no_rule")
-        self.assertEqual(entry["description"], "Random Corp - RANDOM CORP PAYMENT")
-        self.assertEqual(entry["postings"][0]["account"], self.default_suspense) # Debit
+        self.assertEqual(entry["status"], "needs_review_matched_no_rule")
+        self.assertEqual(entry["confidence_score"], Decimal("0.6"))
+        self.assertEqual(entry["description"], "RANDOM CORP PAYMENT") # Vendor name is part of description
+        self.assertEqual(entry["postings"][0]["account"], self.default_suspense)
         self.assertEqual(entry["postings"][0]["debit"], Decimal("120.00"))
-        self.assertEqual(entry["postings"][1]["account"], self.default_bank) # Credit
+        self.assertEqual(entry["postings"][1]["account"], self.default_bank)
+        self.assertEqual(entry["notes"], "Voucher matched to statement, but no specific rule found for GL account.")
 
     def test_generate_entry_unmatched_debit(self):
         matched_results = [{
@@ -83,25 +87,31 @@ class TestJournalGenerator(unittest.TestCase):
         entries = generate_journal_entries(matched_results, self.accounts_config, self.rules_config, self.default_bank, self.default_suspense)
         self.assertEqual(len(entries), 1)
         entry = entries[0]
-        self.assertEqual(entry["status"], "unmatched_debit")
+        self.assertEqual(entry["status"], "needs_review_unmatched_debit")
+        self.assertEqual(entry["confidence_score"], Decimal("0.3"))
         self.assertEqual(entry["description"], "MYSTERY DEBIT")
-        self.assertEqual(entry["postings"][0]["account"], self.default_suspense) # Debit
+        self.assertEqual(entry["postings"][0]["account"], self.default_suspense)
         self.assertEqual(entry["postings"][0]["debit"], Decimal("30.00"))
-        self.assertEqual(entry["postings"][1]["account"], self.default_bank) # Credit
+        self.assertEqual(entry["postings"][1]["account"], self.default_bank)
+        self.assertEqual(entry["notes"], "Statement debit transaction with no matching voucher.")
+
 
     def test_generate_entry_ignored_credit_with_rule(self):
         matched_results = [{
-            "statement": {"date": date(2023, 1, 13), "description": "Client Payment from ACME", "amount": Decimal("500.00")},
+            "statement": {"date": date(2023, 1, 13), "description": "Client Payment from ACME", "amount": Decimal("500.00")}, # "client payment" in description
             "voucher": None,
             "status": "ignored_credit_or_zero"
         }]
         entries = generate_journal_entries(matched_results, self.accounts_config, self.rules_config, self.default_bank, self.default_suspense)
         self.assertEqual(len(entries), 1)
         entry = entries[0]
-        self.assertEqual(entry["status"], "auto_generated_rule_income")
-        self.assertEqual(entry["postings"][0]["account"], self.default_bank) # Debit Bank
+        self.assertEqual(entry["status"], "auto_generated_income_high_confidence")
+        self.assertEqual(entry["confidence_score"], Decimal("0.8"))
+        self.assertEqual(entry["postings"][0]["account"], self.default_bank)
         self.assertEqual(entry["postings"][0]["debit"], Decimal("500.00"))
-        self.assertEqual(entry["postings"][1]["account"], "Consulting Revenue") # Credit Revenue
+        self.assertEqual(entry["postings"][1]["account"], "Consulting Revenue")
+        self.assertEqual(entry["notes"], "")
+
 
     def test_generate_entry_ignored_credit_no_rule(self):
         matched_results = [{
@@ -112,9 +122,12 @@ class TestJournalGenerator(unittest.TestCase):
         entries = generate_journal_entries(matched_results, self.accounts_config, self.rules_config, self.default_bank, self.default_suspense)
         self.assertEqual(len(entries), 1)
         entry = entries[0]
-        self.assertEqual(entry["status"], "unmatched_credit")
-        self.assertEqual(entry["postings"][0]["account"], self.default_bank) # Debit Bank
-        self.assertEqual(entry["postings"][1]["account"], self.default_suspense) # Credit Suspense
+        self.assertEqual(entry["status"], "needs_review_unmatched_credit")
+        self.assertEqual(entry["confidence_score"], Decimal("0.5"))
+        self.assertEqual(entry["postings"][0]["account"], self.default_bank)
+        self.assertEqual(entry["postings"][1]["account"], self.default_suspense)
+        self.assertEqual(entry["notes"], "Statement credit transaction with no specific rule for GL account.")
+
 
     def test_no_entry_for_zero_amount_ignored(self):
         matched_results = [{
@@ -135,11 +148,12 @@ class TestJournalGenerator(unittest.TestCase):
         entries = generate_journal_entries(matched_results, self.accounts_config, self.rules_config, custom_bank_name, self.default_suspense)
         self.assertEqual(len(entries), 1)
         entry = entries[0]
-        # Check that the custom bank name string is used directly if not found in config
         self.assertEqual(entry["postings"][1]["account"], custom_bank_name)
+        self.assertEqual(entry["status"], "needs_review_unmatched_debit") # Status should still be set
+        self.assertEqual(entry["confidence_score"], Decimal("0.3"))
+
 
     def test_date_handling_in_statement(self):
-        # Statement date as string
         matched_results_str_date = [{
             "statement": {"date": "2023-02-01", "description": "Debit A", "amount": Decimal("-10.00")},
             "voucher": None, "status": "unmatched"
@@ -147,8 +161,10 @@ class TestJournalGenerator(unittest.TestCase):
         entries_str = generate_journal_entries(matched_results_str_date, self.accounts_config, self.rules_config, self.default_bank, self.default_suspense)
         self.assertEqual(len(entries_str), 1)
         self.assertEqual(entries_str[0]["date"], "2023-02-01")
+        self.assertEqual(entries_str[0]["status"], "needs_review_unmatched_debit")
+        self.assertEqual(entries_str[0]["confidence_score"], Decimal("0.3"))
 
-        # Invalid date string
+
         matched_results_invalid_date = [{
             "statement": {"date": "2023/02/01", "description": "Debit B", "amount": Decimal("-20.00")},
             "voucher": None, "status": "unmatched"
@@ -156,13 +172,29 @@ class TestJournalGenerator(unittest.TestCase):
         entries_invalid = generate_journal_entries(matched_results_invalid_date, self.accounts_config, self.rules_config, self.default_bank, self.default_suspense)
         self.assertEqual(len(entries_invalid), 0, "Should skip entry with invalid date format")
 
-        # Missing date
         matched_results_missing_date = [{
-            "statement": {"description": "Debit C", "amount": Decimal("-30.00")}, # Date is missing
+            "statement": {"description": "Debit C", "amount": Decimal("-30.00")},
             "voucher": None, "status": "unmatched"
         }]
         entries_missing = generate_journal_entries(matched_results_missing_date, self.accounts_config, self.rules_config, self.default_bank, self.default_suspense)
         self.assertEqual(len(entries_missing), 0, "Should skip entry with missing date")
+
+    def test_entry_id_generation(self):
+        # Test with statement ID present
+        matched_results_with_id = [{
+            "statement": {"id": "stmt_abc", "date": date(2023, 3, 1), "description": "Tx with ID", "amount": Decimal("-10.00")},
+            "voucher": None, "status": "unmatched"
+        }]
+        entries_with_id = generate_journal_entries(matched_results_with_id, self.accounts_config, self.rules_config, self.default_bank, self.default_suspense)
+        self.assertEqual(entries_with_id[0]["id"], "stmt_abc")
+
+        # Test with statement ID missing (fallback to je_gen_idx)
+        matched_results_no_id = [{
+            "statement": {"date": date(2023, 3, 2), "description": "Tx no ID", "amount": Decimal("-20.00")},
+            "voucher": None, "status": "unmatched"
+        }]
+        entries_no_id = generate_journal_entries(matched_results_no_id, self.accounts_config, self.rules_config, self.default_bank, self.default_suspense)
+        self.assertTrue(entries_no_id[0]["id"].startswith("je_gen_"))
 
 
 if __name__ == '__main__':

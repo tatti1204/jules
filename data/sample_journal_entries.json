@@ -7,9 +7,11 @@
             {"account": "Office Supplies", "debit": "50.00", "credit": "0.00"},
             {"account": "Checking Account", "debit": "0.00", "credit": "50.00"}
         ],
-        "status": "auto_generated_rule",
+        "status": "auto_generated_high_confidence",
+        "confidence_score": "0.9",
         "source_statement_id": "stmt1",
-        "source_voucher_id": "vouch1"
+        "source_voucher_id": "vouch1",
+        "notes": ""
     },
     {
         "id": "JE002",
@@ -19,9 +21,11 @@
             {"account": "Software Subscriptions", "debit": "15.00", "credit": "0.00"},
             {"account": "Checking Account", "debit": "0.00", "credit": "15.00"}
         ],
-        "status": "auto_generated_rule",
+        "status": "auto_generated_high_confidence",
+        "confidence_score": "0.9",
         "source_statement_id": "stmt2",
-        "source_voucher_id": "vouch2"
+        "source_voucher_id": "vouch2",
+        "notes": ""
     },
     {
         "id": "JE003",
@@ -31,9 +35,11 @@
             {"account": "Suspense", "debit": "75.50", "credit": "0.00"},
             {"account": "Checking Account", "debit": "0.00", "credit": "75.50"}
         ],
-        "status": "unmatched_debit",
+        "status": "needs_review_unmatched_debit",
+        "confidence_score": "0.3",
         "source_statement_id": "stmt3",
-        "source_voucher_id": null
+        "source_voucher_id": null,
+        "notes": "Statement debit transaction with no matching voucher."
     },
     {
         "id": "JE004",
@@ -43,9 +49,11 @@
             {"account": "Suspense", "debit": "9.99", "credit": "0.00"},
             {"account": "Checking Account", "debit": "0.00", "credit": "9.99"}
         ],
-        "status": "auto_generated_matched_no_rule",
+        "status": "needs_review_matched_no_rule",
+        "confidence_score": "0.6",
         "source_statement_id": "stmt4",
-        "source_voucher_id": "vouch3"
+        "source_voucher_id": "vouch3",
+        "notes": "Voucher matched to statement, but no specific rule found for GL account."
     },
     {
         "id": "JE005",
@@ -55,9 +63,11 @@
             {"account": "Checking Account", "debit": "1200.00", "credit": "0.00"},
             {"account": "Sales Revenue", "debit": "0.00", "credit": "1200.00"}
         ],
-        "status": "auto_generated_rule_income",
+        "status": "auto_generated_income_high_confidence",
+        "confidence_score": "0.8",
         "source_statement_id": "stmt5",
-        "source_voucher_id": null
+        "source_voucher_id": null,
+        "notes": ""
     },
     {
         "id": "JE006",
@@ -67,8 +77,24 @@
             {"account": "Suspense", "debit": "42.75", "credit": "0.00"},
             {"account": "Checking Account", "debit": "0.00", "credit": "42.75"}
         ],
-        "status": "needs_review",
+        "status": "needs_review_unmatched_debit",
+        "confidence_score": "0.3",
         "source_statement_id": "stmt6",
-        "source_voucher_id": null
+        "source_voucher_id": null,
+        "notes": "Statement debit transaction with no matching voucher."
+    },
+    {
+        "id": "JE007",
+        "date": "2023-10-25",
+        "description": "Misc Credit Received",
+        "postings": [
+            {"account": "Checking Account", "debit": "100.00", "credit": "0.00"},
+            {"account": "Suspense", "debit": "0.00", "credit": "100.00"}
+        ],
+        "status": "needs_review_unmatched_credit",
+        "confidence_score": "0.5",
+        "source_statement_id": "stmt7",
+        "source_voucher_id": null,
+        "notes": "Statement credit transaction with no specific rule for GL account."
     }
 ]
