@@ -1,0 +1,7 @@
+accounts:
+  - name: "Main Bank Account"
+    type: "bank"
+    identifier: "XXXX-1234"
+  - name: "Corporate Credit Card"
+    type: "credit_card"
+    identifier: "YYYY-5678"

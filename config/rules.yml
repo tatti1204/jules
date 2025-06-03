@@ -1,0 +1,17 @@
+rules:
+  - name: "Office Supplies Rule"
+    conditions:
+      keywords: ["office depot", "staples", "amazon basics office"]
+      # amount_min: 10
+      # amount_max: 200
+    account: "Office Supplies"
+    debit_account_type: "Expense" # Or based on accounts.yml types
+    credit_account_type: "Asset" # Or based on accounts.yml types / payment method
+
+  - name: "Software Subscription Rule"
+    conditions:
+      keywords: ["zoom", "slack", "microsoft 365", "adobe creative cloud"]
+      # transaction_type: "recurring" # Example of another condition
+    account: "Software Subscriptions"
+    debit_account_type: "Expense"
+    credit_account_type: "Asset" # Or payment method like "Corporate Credit Card"

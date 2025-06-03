@@ -1,0 +1,74 @@
+[
+    {
+        "id": "JE001",
+        "date": "2023-10-05",
+        "description": "Office Depot - OFFICE DEPOT #123",
+        "postings": [
+            {"account": "Office Supplies", "debit": "50.00", "credit": "0.00"},
+            {"account": "Checking Account", "debit": "0.00", "credit": "50.00"}
+        ],
+        "status": "auto_generated_rule",
+        "source_statement_id": "stmt1",
+        "source_voucher_id": "vouch1"
+    },
+    {
+        "id": "JE002",
+        "date": "2023-10-10",
+        "description": "Zoom Video Communications - ZOOM.US QWERTY",
+        "postings": [
+            {"account": "Software Subscriptions", "debit": "15.00", "credit": "0.00"},
+            {"account": "Checking Account", "debit": "0.00", "credit": "15.00"}
+        ],
+        "status": "auto_generated_rule",
+        "source_statement_id": "stmt2",
+        "source_voucher_id": "vouch2"
+    },
+    {
+        "id": "JE003",
+        "date": "2023-10-15",
+        "description": "UNKNOWN VENDOR PAYMENT",
+        "postings": [
+            {"account": "Suspense", "debit": "75.50", "credit": "0.00"},
+            {"account": "Checking Account", "debit": "0.00", "credit": "75.50"}
+        ],
+        "status": "unmatched_debit",
+        "source_statement_id": "stmt3",
+        "source_voucher_id": null
+    },
+    {
+        "id": "JE004",
+        "date": "2023-10-12",
+        "description": "Microsoft - MICROSOFT 365",
+        "postings": [
+            {"account": "Suspense", "debit": "9.99", "credit": "0.00"},
+            {"account": "Checking Account", "debit": "0.00", "credit": "9.99"}
+        ],
+        "status": "auto_generated_matched_no_rule",
+        "source_statement_id": "stmt4",
+        "source_voucher_id": "vouch3"
+    },
+    {
+        "id": "JE005",
+        "date": "2023-10-20",
+        "description": "Client Payment ABC Corp",
+        "postings": [
+            {"account": "Checking Account", "debit": "1200.00", "credit": "0.00"},
+            {"account": "Sales Revenue", "debit": "0.00", "credit": "1200.00"}
+        ],
+        "status": "auto_generated_rule_income",
+        "source_statement_id": "stmt5",
+        "source_voucher_id": null
+    },
+    {
+        "id": "JE006",
+        "date": "2023-10-22",
+        "description": "Unclear Expense Transaction",
+        "postings": [
+            {"account": "Suspense", "debit": "42.75", "credit": "0.00"},
+            {"account": "Checking Account", "debit": "0.00", "credit": "42.75"}
+        ],
+        "status": "needs_review",
+        "source_statement_id": "stmt6",
+        "source_voucher_id": null
+    }
+]

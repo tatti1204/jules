@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Journal Entry Review</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+        h1 { text-align: center; color: #2c3e50; }
+        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #3498db; color: white; }
+        tr:nth-child(even) { background-color: #ecf0f1; }
+        .status { padding: 5px 8px; border-radius: 4px; color: white; font-weight: bold; }
+        .status-needs_review { background-color: #f39c12; }
+        .status-unmatched_debit, .status-auto_generated_matched_no_rule { background-color: #e74c3c; }
+        .status-auto_generated_rule, .status-auto_generated_rule_income { background-color: #2ecc71; }
+        .status-approved { background-color: #27ae60; }
+        .status-flagged_for_correction { background-color: #d35400; }
+        .actions button { padding: 8px 12px; margin-right: 5px; border: none; border-radius: 4px; cursor: pointer; }
+        .actions .approve-btn { background-color: #2ecc71; color: white; }
+        .actions .flag-btn { background-color: #e67e22; color: white; }
+        .filters { margin-bottom: 20px; padding: 10px; background-color: #ecf0f1; border-radius: 5px;}
+        .filters label { margin-right: 10px; }
+        .filters select, .filters input { padding: 8px; border-radius: 4px; border: 1px solid #bdc3c7; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Journal Entry Review</h1>
+
+        <div class="filters">
+            <label for="status-filter">Filter by Status:</label>
+            <select id="status-filter">
+                <option value="all">All</option>
+                <option value="needs_review">Needs Review</option>
+                <option value="unmatched_debit">Unmatched Debit</option>
+                <option value="auto_generated_matched_no_rule">Matched (No Rule)</option>
+                <option value="auto_generated_rule">Auto (Rule)</option>
+                <option value="auto_generated_rule_income">Auto (Income Rule)</option>
+                <option value="approved">Approved</option>
+                <option value="flagged_for_correction">Flagged for Correction</option>
+            </select>
+            <label for="date-filter">Filter by Date:</label>
+            <input type="date" id="date-filter">
+            <button onclick="applyFilters()">Apply Filters</button>
+            <button onclick="resetFilters()">Reset Filters</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Postings</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="journal-entries-tbody">
+                <!-- Entries will be loaded here by JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        let allJournalEntries = []; // To store all loaded entries
+
+        async function loadJournalEntries() {
+            try {
+                // Adjust the path if your html file is not at the root or data is elsewhere
+                const response = await fetch('../data/sample_journal_entries.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                allJournalEntries = await response.json();
+                renderJournalEntries(allJournalEntries);
+            } catch (error) {
+                console.error("Error loading journal entries:", error);
+                document.getElementById('journal-entries-tbody').innerHTML = '<tr><td colspan="6">Error loading data. See console.</td></tr>';
+            }
+        }
+
+        function renderJournalEntries(entriesToRender) {
+            const tbody = document.getElementById('journal-entries-tbody');
+            tbody.innerHTML = ''; // Clear existing rows
+
+            if (!entriesToRender || entriesToRender.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6">No journal entries to display.</td></tr>';
+                return;
+            }
+
+            entriesToRender.forEach(entry => {
+                const row = tbody.insertRow();
+                row.insertCell().textContent = entry.id || 'N/A';
+                row.insertCell().textContent = entry.date;
+                row.insertCell().textContent = entry.description;
+
+                const postingsCell = row.insertCell();
+                let postingsHtml = '<ul>';
+                entry.postings.forEach(p => {
+                    postingsHtml += `<li>${p.account}: Dr ${p.debit} / Cr ${p.credit}</li>`;
+                });
+                postingsHtml += '</ul>';
+                postingsCell.innerHTML = postingsHtml;
+
+                const statusCell = row.insertCell();
+                const statusSpan = document.createElement('span');
+                statusSpan.className = `status status-${entry.status.toLowerCase().replace(/[\s_]+/g, '_')}`;
+                statusSpan.textContent = entry.status;
+                statusCell.appendChild(statusSpan);
+
+                const actionsCell = row.insertCell();
+                actionsCell.className = 'actions';
+
+                const approveButton = document.createElement('button');
+                approveButton.textContent = 'Approve';
+                approveButton.className = 'approve-btn';
+                approveButton.onclick = () => updateEntryStatus(entry.id, 'approved', statusSpan);
+
+                const flagButton = document.createElement('button');
+                flagButton.textContent = 'Flag for Correction';
+                flagButton.className = 'flag-btn';
+                flagButton.onclick = () => updateEntryStatus(entry.id, 'flagged_for_correction', statusSpan);
+
+                actionsCell.appendChild(approveButton);
+                actionsCell.appendChild(flagButton);
+            });
+        }
+
+        function updateEntryStatus(entryId, newStatus, statusSpanElement) {
+            console.log(`Updating entry ${entryId} to status ${newStatus}`);
+            // In a real app, this would send an update to the backend.
+            // For this demo, we'll just update the UI and the local data.
+            const entry = allJournalEntries.find(e => e.id === entryId);
+            if (entry) {
+                entry.status = newStatus;
+                statusSpanElement.textContent = newStatus;
+                statusSpanElement.className = `status status-${newStatus.toLowerCase().replace(/[\s_]+/g, '_')}`;
+            }
+            // If filters are active, re-apply them to reflect changes or hide the item
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const statusFilter = document.getElementById('status-filter').value;
+            const dateFilter = document.getElementById('date-filter').value;
+
+            let filteredEntries = allJournalEntries;
+
+            if (statusFilter !== 'all') {
+                filteredEntries = filteredEntries.filter(entry => entry.status === statusFilter);
+            }
+
+            if (dateFilter) {
+                filteredEntries = filteredEntries.filter(entry => entry.date === dateFilter);
+            }
+            renderJournalEntries(filteredEntries);
+        }
+
+        function resetFilters() {
+            document.getElementById('status-filter').value = 'all';
+            document.getElementById('date-filter').value = '';
+            renderJournalEntries(allJournalEntries);
+        }
+
+        // Load entries when the page is ready
+        document.addEventListener('DOMContentLoaded', loadJournalEntries);
+    </script>
+</body>
+</html>
